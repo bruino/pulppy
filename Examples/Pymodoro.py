@@ -18,8 +18,8 @@ def window():
 
     win.setGeometry(100,100,250,100)
     win.setWindowTitle("Pymodoro")
-    time.sleep(1800)
-    #time.sleep(5)
+    #time.sleep(1800)
+    time.sleep(5)
     win.show()
     sys.exit(app.exec_())
 
