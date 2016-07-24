@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 # PuLP : Python LP Modeler
 
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -88,19 +88,24 @@ class MainWindow(QMainWindow):
         referenceFrameFormat.setBorder(1)
         referenceFrameFormat.setPadding(8)
         referenceFrameFormat.setPosition(QTextFrameFormat.FloatLeft)
-        referenceFrameFormat.setWidth(700)
+        referenceFrameFormat.setWidth(QTextLength(QTextLength.PercentageLength, 100))
         cursor.insertFrame(referenceFrameFormat)
 
         cursor.insertText("Title Problem: ", boldFormat)
         cursor.insertText(problem.name+"\n", textFormat)
-        cursor.insertBlock()
+        cursor.insertText("Criterion: ", boldFormat)
         if problem.sense == 1:
-            cursor.insertText("Minimize\n",boldFormat)
+            cursor.insertText("Minimize\n",textFormat)
         else:
-            cursor.insertText("Maximize\n",boldFormat)
-        cursor.insertBlock()
+            cursor.insertText("Maximize\n",textFormat)
+
         WasNone, dummyVar = problem.fixObjective()
-        cursor.insertText("Objective\n")
+        cursor.insertText("Status: ", boldFormat)
+        cursor.insertText(str(LpStatus[problem.status])+"\n", textFormat)
+        cursor.insertText("Value Function Objetive: ", boldFormat)
+        cursor.insertText(str(value(problem.objective))+"\n", textFormat)
+        cursor.insertBlock()
+        cursor.insertText("Objective\n", boldFormat)
         cursor.insertText(str(problem.objective)+"\n", textFormat)
         cursor.insertBlock()
         cursor.insertText("Subject To\n", boldFormat)
@@ -122,6 +127,7 @@ class MainWindow(QMainWindow):
             cursor.insertText(str(constraint), textFormat)
             cursor.insertBlock()
         vs = problem.variables()
+        cursor.insertBlock()
         # Bounds on non-"positive" variables
         # Note: XPRESS and CPLEX do not interpret integer variables without
         # explicit bounds
@@ -135,29 +141,24 @@ class MainWindow(QMainWindow):
             cursor.insertText("Bounds\n", boldFormat)
             for v in vg:
                 cursor.insertText("%s, " % v.asCplexLpVariable(), textFormat)
-                cursor.insertBlock()
         # Integer non-binary variables
         if mip:
             vg = [v for v in vs if v.cat == LpInteger and not v.isBinary()]
             if vg:
                 cursor.insertText("Generals\n", boldFormat)
-                cursor.insertBlock()
                 for v in vg:
                     cursor.insertText("%s, " % v.name, textFormat)
-                    cursor.insertBlock()
             # Binary variables
             vg = [v for v in vs if v.isBinary()]
             if vg:
                 cursor.insertText("Binaries\n",boldFormat)
-                cursor.insertBlock()
                 for v in vg:
                     cursor.insertText("%s, " % v.name, textFormat)
-        cursor.insertBlock()
         cursor.setPosition(topFrame.lastPosition())
-        cursor.insertBlock()
 
         bodyFrameFormat = QTextFrameFormat()
         bodyFrameFormat.setWidth(QTextLength(QTextLength.PercentageLength, 100))
+        cursor.insertBlock()
         cursor.insertFrame(bodyFrameFormat)
 
         orderTableFormat = QTextTableFormat()
@@ -172,19 +173,25 @@ class MainWindow(QMainWindow):
         cursor.insertText("Variable", boldFormat)
         cursor = orderTable.cellAt(0, 1).firstCursorPosition()
         cursor.insertText("Value", boldFormat)
+        cursor = orderTable.cellAt(0, 2).firstCursorPosition()
+        cursor.insertText("Reduced Cost", boldFormat)
 
         for v in problem.variables():
             row = orderTable.rows()
             orderTable.insertRows(row, 1)
+            #Name variable
             cursor = orderTable.cellAt(row, 0).firstCursorPosition()
             cursor.insertText(v.name, textFormat)
+            #Value variable
             cursor = orderTable.cellAt(row, 1).firstCursorPosition()
             cursor.insertText(str(v.varValue), textFormat)
+            #Cost Reduced variable
             cursor = orderTable.cellAt(row, 2).firstCursorPosition()
             cursor.insertText(str(v.dj), textFormat)
 
         cursor.setPosition(topFrame.lastPosition())
         cursor.insertBlock()
+
         orderTableFormat = QTextTableFormat()
         orderTableFormat.setAlignment(Qt.AlignHCenter)
         orderTable = cursor.insertTable(1, 3, orderTableFormat)
@@ -203,13 +210,15 @@ class MainWindow(QMainWindow):
         for m in range(problem.numConstraints()):
             row = orderTable.rows()
             orderTable.insertRows(row, 1)
+            #Name Constraint
             cursor = orderTable.cellAt(row, 0).firstCursorPosition()
             cursor.insertText("C"+ str(m+1), textFormat)
+            #Slack Constraint
             cursor = orderTable.cellAt(row, 1).firstCursorPosition()
-            cursor.insertText(str(problem.constraints.get("_C"+str(m+1)).pi)
-                                    , textFormat)
-            cursor = orderTable.cellAt(row, 2).firstCursorPosition()
             cursor.insertText(str(problem.constraints.get("_C"+str(m+1)).slack)
+            , textFormat)
+            cursor = orderTable.cellAt(row, 2).firstCursorPosition()
+            cursor.insertText(str(problem.constraints.get("_C"+str(m+1)).pi)
                                     , textFormat)
 
 class InputProblem(QDialog):
