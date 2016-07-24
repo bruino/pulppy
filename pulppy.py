@@ -24,10 +24,12 @@ from pulp import *
 from PyQt5.QtCore import QDate, Qt
 from PyQt5.QtGui import (QFont, QTextCharFormat, QTextCursor, QTextFrameFormat,
         QTextLength, QTextTableFormat)
+from PyQt5.QtCore import QSize
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QDialog, QDoubleSpinBox,
-        QDialogButtonBox, QGridLayout, QLabel, QLineEdit, QMainWindow, QPushButton,
-        QMessageBox, QMenu, QTableWidget, QTableWidgetItem, QTabWidget, QComboBox,
-        QTextEdit, QItemDelegate, QHBoxLayout, QSpinBox, QRadioButton, QGroupBox, QVBoxLayout)
+        QDialogButtonBox, QGridLayout, QLabel, QLineEdit, QMainWindow,
+        QPushButton, QMessageBox, QMenu, QTableWidget, QTableWidgetItem,
+        QTabWidget, QComboBox, QTextEdit, QItemDelegate, QHBoxLayout, QSpinBox
+        , QRadioButton, QGroupBox, QVBoxLayout, QSizePolicy)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -40,6 +42,8 @@ class MainWindow(QMainWindow):
         self.menuBar().addMenu(fileMenu)
 
         self.solvers = QTabWidget()
+        self.solvers.setTabsClosable(True)
+        self.solvers.tabCloseRequested.connect(self.closeTab)
 
         newAction.triggered.connect(self.openDialog)
         quitAction.triggered.connect(self.close)
@@ -50,10 +54,17 @@ class MainWindow(QMainWindow):
     def createSample(self):
         self.createTabSolver()
 
+    def closeTab (self, currentIndex):
+        currentQWidget = self.solvers.widget(currentIndex)
+        currentQWidget.deleteLater()
+        self.solvers.removeTab(currentIndex)
+
     def openDialog(self):
         inputProblemDialog = InputProblem(self)
         if inputProblemDialog.exec_() == QDialog.Accepted:
-            inputTable = InputTableModel(inputProblemDialog.title, inputProblemDialog.numVar, inputProblemDialog.numCons, inputProblemDialog.typeVar, inputProblemDialog.objCrit, self)
+            inputTable = InputTableModel(inputProblemDialog.title
+            , inputProblemDialog.numVar, inputProblemDialog.numCons
+            , inputProblemDialog.typeVar, inputProblemDialog.objCrit, self)
             if inputTable.exec_() == QDialog.Accepted:
                 self.createTabSolver(inputTable.problem)
 
@@ -80,8 +91,6 @@ class MainWindow(QMainWindow):
         referenceFrameFormat.setWidth(700)
         cursor.insertFrame(referenceFrameFormat)
 
-        #-------------------------------------------------------------------------------------------------------
-        mip=1
         cursor.insertText("Title Problem: ", boldFormat)
         cursor.insertText(problem.name+"\n", textFormat)
         cursor.insertBlock()
@@ -104,8 +113,10 @@ class MainWindow(QMainWindow):
                 #empty constraint add the dummyVar
                 dummyVar = problem.get_dummyVar()
                 constraint += dummyVar
-                #set this dummyvar to zero so infeasible problems are not made feasible
-                cursor.insertText((dummyVar == 0.0).asCplexLpConstraint("_dummy"), textFormat)
+                #set this dummyvar to zero so infeasible problems are not made
+                #feasible
+                cursor.insertText((dummyVar == 0.0).asCplexLpConstraint("_dummy")
+                                    , textFormat)
                 cursor.insertBlock()
             cursor.insertText(str(k)+" : ", boldFormat)
             cursor.insertText(str(constraint), textFormat)
@@ -114,15 +125,16 @@ class MainWindow(QMainWindow):
         # Bounds on non-"positive" variables
         # Note: XPRESS and CPLEX do not interpret integer variables without
         # explicit bounds
+        mip=1
         if mip:
-            vg = [v for v in vs if not (v.isPositive() and v.cat == LpContinuous) \
+            vg=[v for v in vs if not (v.isPositive() and v.cat==LpContinuous) \
                 and not v.isBinary()]
         else:
             vg = [v for v in vs if not v.isPositive()]
         if vg:
             cursor.insertText("Bounds\n", boldFormat)
             for v in vg:
-                cursor.insertText("%s\n" % v.asCplexLpVariable(), textFormat)
+                cursor.insertText("%s, " % v.asCplexLpVariable(), textFormat)
                 cursor.insertBlock()
         # Integer non-binary variables
         if mip:
@@ -131,7 +143,7 @@ class MainWindow(QMainWindow):
                 cursor.insertText("Generals\n", boldFormat)
                 cursor.insertBlock()
                 for v in vg:
-                    cursor.insertText("%s\n" % v.name, textFormat)
+                    cursor.insertText("%s, " % v.name, textFormat)
                     cursor.insertBlock()
             # Binary variables
             vg = [v for v in vs if v.isBinary()]
@@ -140,9 +152,7 @@ class MainWindow(QMainWindow):
                 cursor.insertBlock()
                 for v in vg:
                     cursor.insertText("%s, " % v.name, textFormat)
-        cursor.insertText("End\n")
         cursor.insertBlock()
-        #-------------------------------------------------------------------------------------------------------
         cursor.setPosition(topFrame.lastPosition())
         cursor.insertBlock()
 
@@ -161,11 +171,10 @@ class MainWindow(QMainWindow):
         cursor = orderTable.cellAt(0, 0).firstCursorPosition()
         cursor.insertText("Variable", boldFormat)
         cursor = orderTable.cellAt(0, 1).firstCursorPosition()
-        cursor.insertText("Valor", boldFormat)
+        cursor.insertText("Value", boldFormat)
 
         for v in problem.variables():
             row = orderTable.rows()
-
             orderTable.insertRows(row, 1)
             cursor = orderTable.cellAt(row, 0).firstCursorPosition()
             cursor.insertText(v.name, textFormat)
@@ -185,11 +194,11 @@ class MainWindow(QMainWindow):
         cursor.currentFrame().setFrameFormat(orderFrameFormat)
 
         cursor = orderTable.cellAt(0, 0).firstCursorPosition()
-        cursor.insertText("Restriccion", boldFormat)
+        cursor.insertText("Constraint", boldFormat)
         cursor = orderTable.cellAt(0, 1).firstCursorPosition()
         cursor.insertText("Slack", boldFormat)
         cursor = orderTable.cellAt(0, 2).firstCursorPosition()
-        cursor.insertText("Precio sombra", boldFormat)
+        cursor.insertText("Shadow Price", boldFormat)
 
         for m in range(problem.numConstraints()):
             row = orderTable.rows()
@@ -197,9 +206,11 @@ class MainWindow(QMainWindow):
             cursor = orderTable.cellAt(row, 0).firstCursorPosition()
             cursor.insertText("C"+ str(m+1), textFormat)
             cursor = orderTable.cellAt(row, 1).firstCursorPosition()
-            cursor.insertText(str(problem.constraints.get("_C"+str(m+1)).pi), textFormat)
+            cursor.insertText(str(problem.constraints.get("_C"+str(m+1)).pi)
+                                    , textFormat)
             cursor = orderTable.cellAt(row, 2).firstCursorPosition()
-            cursor.insertText(str(problem.constraints.get("_C"+str(m+1)).slack), textFormat)
+            cursor.insertText(str(problem.constraints.get("_C"+str(m+1)).slack)
+                                    , textFormat)
 
 class InputProblem(QDialog):
     def __init__(self,parent=None):
@@ -250,7 +261,7 @@ class InputProblem(QDialog):
         self.createTopRightGroupBox()
 
         ##--Buttons--##
-        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttonBox=QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttonBox.accepted.connect(self.verify)
         buttonBox.rejected.connect(self.reject)
 
@@ -304,13 +315,13 @@ class InputProblem(QDialog):
                 self.typeVar = 2
             elif self.binaryRadioButton.isChecked():
                 self.typeVar = 3
-            else:
+            else:#Unrestricted
                 self.typeVar = 4
 
             if self.maxRadioButton.isChecked():
-                self.objCrit = True
+                self.objCrit = True#Maximitation
             else:
-                self.objCrit = False
+                self.objCrit = False#Minimization
 
             self.accept()
             return
@@ -322,40 +333,6 @@ class InputProblem(QDialog):
 
         if answer == QMessageBox.Yes:
             self.reject()
-# class DetailsDialog(QDialog):
-#     def __init__(self, title, parent):
-#         super(DetailsDialog, self).__init__(parent)
-#
-#         self.items = ("T-shirt", "Badge", "Reference book", "Coffee cup")
-#
-#         nameLabel = QLabel("Name:")
-#         addressLabel = QLabel("Address:")
-#         addressLabel.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-#
-#         self.nameEdit = QLineEdit()
-#         self.addressEdit = QTextEdit()
-#         self.offersCheckBox = QCheckBox(
-#                 "Send information about products and special offers:")
-#
-#         self.setupItemsTable()
-#
-#         buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-#
-#         buttonBox.accepted.connect(self.verify)
-#         buttonBox.rejected.connect(self.reject)
-#
-#         mainLayout = QGridLayout()
-#         mainLayout.addWidget(nameLabel, 0, 0)
-#         mainLayout.addWidget(self.nameEdit, 0, 1)
-#         mainLayout.addWidget(addressLabel, 1, 0)
-#         mainLayout.addWidget(self.addressEdit, 1, 1)
-#         mainLayout.addWidget(self.itemsTable, 0, 2, 2, 1)
-#         mainLayout.addWidget(self.offersCheckBox, 2, 1, 1, 2)
-#         mainLayout.addWidget(buttonBox, 3, 0, 1, 3)
-#         self.setLayout(mainLayout)
-#
-#         self.setWindowTitle(title)
-
     def setupItemsTable(self):
         self.itemsTable = QTableWidget(len(self.items), 2)
 
@@ -366,25 +343,6 @@ class InputProblem(QDialog):
             quantity = QTableWidgetItem('1')
             self.itemsTable.setItem(row, 1, quantity)
 
-    def orderItems(self):
-        orderList = []
-
-        for row in range(len(self.items)):
-            text = self.itemsTable.item(row, 0).text()
-            quantity = int(self.itemsTable.item(row, 1).data(Qt.DisplayRole))
-            orderList.append((text, max(0, quantity)))
-
-        return orderList
-
-    def senderName(self):
-        return self.nameEdit.text()
-
-    def senderAddress(self):
-        return self.addressEdit.toPlainText()
-
-    def sendOffers(self):
-        return self.offersCheckBox.isChecked()
-#############################################################################
 class Delegate(QItemDelegate):
     def createEditor(self, parent, option, index):
         spinBox = QDoubleSpinBox(parent)
@@ -402,10 +360,9 @@ class InputTableModel(QDialog):
         self.numConstraints = numCons
         self.objCriterion = objCrit
         self.typeVariable = typeVar
-        self.tableModel = QTableWidget(self.numConstraints+4, self.numVariables+2)
+        self.tableModel = QTableWidget(self.numConstraints+1, self.numVariables+2)
         self.tableModel.setItemDelegate(Delegate(self))
 
-        #Generar las Columnas
         listVariables = []
         for m in range(self.numVariables):
             listVariables.append("X"+str(m))
@@ -423,34 +380,23 @@ class InputTableModel(QDialog):
             combo.addItem('>=')
             combo.addItem('>')
             self.tableModel.setCellWidget(m+1, self.numVariables, combo)
-        listConstraints.extend(["LowerBound","UpperBound", "VariableType"])
+
+        #listConstraints.extend(["LowerBound","UpperBound", "VariableType"])
 
         self.tableModel.setCellWidget(0, self.numVariables, QLabel(""))
 
         self.tableModel.setHorizontalHeaderLabels(listVariables)
         self.tableModel.setVerticalHeaderLabels(listConstraints)
 
-        """for m in range(self.numConstraints + 2): #For para que no sea editable las celdas abajo de los combobox
-            if m >= self.numConstraints:
-                c = QLabel("")
-                self.tableModel.setCellWidget(m, self.numVariables, c)
-
-        for m in range(self.numConstraints + 2): #For para que no sea editable las celdas siguientes y abajo de los combobox
-            if m >= self.numConstraints:
-                c = QLabel("")
-                self.tableModel.setCellWidget(m, self.numVariables + 1, c)"""
-
-
         buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttonBox.accepted.connect(self.verify)
         buttonBox.rejected.connect(self.reject)
 
-        #TODO: Corregir con label's
+        f = "Problem Title: "
         if self.objCriterion == True:
-            f = self.problemTitle + " - Maximizacion"
+            f = f + self.problemTitle + " - Objetive: Maximitation"
         else:
-            f = self.problemTitle + " - Manimizacion"
-
+            f = f + self.problemTitle + " - Objetive: Minimization"
         t = QLabel(f)
 
         mainLayout = QVBoxLayout()
@@ -458,11 +404,17 @@ class InputTableModel(QDialog):
         mainLayout.addWidget(self.tableModel)
         mainLayout.addWidget(buttonBox)
 
+        width = self.tableModel.columnWidth(1)*(self.tableModel.columnCount()+1)
+        height = self.tableModel.rowHeight(0)*(self.tableModel.rowCount()+4)
+
+        self.resize(QSize(width, height))
         self.setWindowTitle("Input Problem Model")
         self.setLayout(mainLayout)
 
     def verify(self):
         self.accept()
+
+        #Matix Values
         matrix = []
         for f in range(self.tableModel.rowCount()):
             row = []
@@ -480,7 +432,6 @@ class InputTableModel(QDialog):
             if f == 0:
                 row.pop(-1)
             matrix.append(row)
-        print matrix
 
         #Title and Criterion
         if self.objCriterion:
@@ -494,18 +445,21 @@ class InputTableModel(QDialog):
             print "Non Negative Continuous"
         #Non Negative Integer
         elif self.typeVariable == 2:
-            x = LpVariable.matrix("x", list(range(self.numVariables)), 0, None, LpInteger)
+            x = LpVariable.matrix("x", list(range(self.numVariables)), 0, None
+                                    , LpInteger)
             print "Non Negative Integer"
         #Binary
         elif self.typeVariable == 3:
-            x = LpVariable.matrix("x", list(range(self.numVariables)), 0, 1, LpInteger)
+            x = LpVariable.matrix("x", list(range(self.numVariables)), 0, 1
+                                    , LpInteger)
             print "Binary"
         #Unrestricted
         else:
-            x = LpVariable.matrix("x", list(range(self.numVariables)), None, None)
+            x = LpVariable.matrix("x", list(range(self.numVariables)), None
+                                    , None)
             print "Unrestricted"
 
-        for i in range(len(matrix)-3):
+        for i in range(len(matrix)):
             if i == 0:
                 #Function Objetive
                 weight = lpDot(matrix[i], x)
@@ -524,26 +478,15 @@ class InputTableModel(QDialog):
                     self.problem += constraint <= b
                 else:
                     self.problem += constraint < b
-        print self.problem.variables()
+
+        #Resolve Cmpl (<Coliop|Coin> Mathematical Programming Language)
         self.problem.solve(COIN())
-        print("Status:", LpStatus[self.problem.status])
-
-        # Print the value of the variables at the optimum
-        for v in self.problem.variables():
-            print(v.name, "=", v.varValue)
-
-        print("objective=", value(self.problem.objective))
         return
 
-#############################################################################
-
-
 if __name__ == '__main__':
-
     import sys
-
     app = QApplication(sys.argv)
     window = MainWindow()
-    window.resize(640, 480)
+    window.resize(800, 600)
     window.show()
     sys.exit(app.exec_())
