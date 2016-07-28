@@ -82,7 +82,11 @@ def initialize(filename, operating_system='linux', arch='64'):
     try:
         coinMP_path = config.get("locations", "CoinMPPath").split(', ')
     except configparser.Error:
-        coinMP_path = ['libCoinMP.so']
+        #Agregado por Bruino
+        if os.name == 'nt':
+            coinMP_path = ['CoinMP.dll']
+        else:
+            coinMP_path = ['libCoinMP.so']
     try:
         gurobi_path = config.get("locations", "GurobiPath")
     except configparser.Error:
@@ -1523,7 +1527,7 @@ class COINMP_DLL(LpSolver):
     :param epgap: The fractional mip tolerance
     """
     try:
-        lib = COINMP_DLL_load_dll(coinMP_path)
+        lib = COINMP_DLL_load_dll(['CoinMP.dll'])
     except (ImportError, OSError):
         @classmethod
         def available(cls):

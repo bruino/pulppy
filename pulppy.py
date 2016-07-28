@@ -20,6 +20,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import os
 from pulp import *
 from PyQt5.QtCore import QDate, Qt
 from PyQt5.QtGui import (QFont, QTextCharFormat, QTextCursor, QTextFrameFormat,
@@ -39,7 +40,12 @@ class MainWindow(QMainWindow):
         newAction.setShortcut("Ctrl+N")
         quitAction = fileMenu.addAction("&Exit")
         quitAction.setShortcut("Ctrl+Q")
+
+        helpMenu = QMenu("&Help", self)
+        aboutAction = helpMenu.addAction("&About")
+
         self.menuBar().addMenu(fileMenu)
+        self.menuBar().addMenu(helpMenu)
 
         self.solvers = QTabWidget()
         self.solvers.setTabsClosable(True)
@@ -47,6 +53,7 @@ class MainWindow(QMainWindow):
 
         newAction.triggered.connect(self.openDialog)
         quitAction.triggered.connect(self.close)
+        aboutAction.triggered.connect(self.openAbout)
 
         self.setCentralWidget(self.solvers)
         self.setWindowTitle("Pulppy Software")
@@ -220,6 +227,12 @@ class MainWindow(QMainWindow):
             cursor = orderTable.cellAt(row, 2).firstCursorPosition()
             cursor.insertText(str(problem.constraints.get("_C"+str(m+1)).pi)
                                     , textFormat)
+
+    def openAbout(self):
+        aboutDialog = QMessageBox.about(self, "About Pulppy Software"
+            ,"Linear Programming Software for optimizing various\n"
+            "practical problems of Operations Research.\n"
+            "Repository: https://github.com/bruino/pulppy")
 
 class InputProblem(QDialog):
     def __init__(self,parent=None):
@@ -488,8 +501,9 @@ class InputTableModel(QDialog):
                 else:
                     self.problem += constraint < b
 
-        #Resolve Cmpl (<Coliop|Coin> Mathematical Programming Language)
-        self.problem.solve(COIN())
+        #Linux: solvers.COIN_CMD() with coin-cbc installed.
+	#Windows: Modified solvers.COINMP_DLL() in dir pulp to run.
+        self.problem.solve(solvers.COIN_CMD())
         return
 
 if __name__ == '__main__':
