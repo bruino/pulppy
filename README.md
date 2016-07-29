@@ -10,4 +10,10 @@ The project has the following dependencies:
 3. [Clp](https://projects.coin-or.org/Clp) The Computational Infrastructure for Operations Research (COIN-OR**, or simply COIN)  project is an initiative to spur the development of open-source software for the operations research community. 
 
 ## Origin
-This software was made to accomplish a university project for the "Operative Research" course of the [Universidad Tecnológica Nacional - Facultad Regional Tucumán](frt.utn.edu.ar). For any questions or suggestions, reach me at: bruino.one[at]gmail.com
+This software was made to accomplish a university project for the "Operative Research" course of the [Universidad Tecnológica Nacional - Facultad Regional Tucumán](http://www.frt.utn.edu.ar/). For any questions or suggestions, reach me at: bruino.one[at]gmail.com
+
+## Authors
+-    [Danert, Jessica](https://github.com/jesdan)
+-    [Gutierrez Nofal, Mariano](https://github.com/Mago91)
+-    [Moreno, Ricardo](https://github.com/Rickywep)
+-    [Sarverry, Bruno](https://github.com/bruino)
