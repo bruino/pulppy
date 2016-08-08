@@ -24,13 +24,13 @@ import os
 from pulp import *
 from PyQt5.QtCore import QDate, Qt
 from PyQt5.QtGui import (QFont, QTextCharFormat, QTextCursor, QTextFrameFormat,
-        QTextLength, QTextTableFormat)
+        QTextLength, QTextTableFormat, QPixmap, QIcon)
 from PyQt5.QtCore import QSize
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QDialog, QDoubleSpinBox,
         QDialogButtonBox, QGridLayout, QLabel, QLineEdit, QMainWindow,
         QPushButton, QMessageBox, QMenu, QTableWidget, QTableWidgetItem,
         QTabWidget, QComboBox, QTextEdit, QItemDelegate, QHBoxLayout, QSpinBox
-        , QRadioButton, QGroupBox, QVBoxLayout, QSizePolicy)
+        , QRadioButton, QGroupBox, QVBoxLayout, QSizePolicy, QWidget)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -229,10 +229,8 @@ class MainWindow(QMainWindow):
                                     , textFormat)
 
     def openAbout(self):
-        aboutDialog = QMessageBox.about(self, "About Pulppy Software"
-            ,"Linear Programming Software for optimizing various\n"
-            "practical problems of Operations Research.\n"
-            "Repository: https://github.com/bruino/pulppy")
+        about = AboutDialog(self)
+        about.show()
 
 class InputProblem(QDialog):
     def __init__(self,parent=None):
@@ -247,7 +245,6 @@ class InputProblem(QDialog):
 
         self.nameProblemEdit = QLineEdit()
         nameProblemLabel = QLabel("&Problem Title")
-        #Pone al Label como companero del EditText
         nameProblemLabel.setBuddy(self.nameProblemEdit)
 
         topLayout.addWidget(nameProblemLabel)
@@ -505,6 +502,61 @@ class InputTableModel(QDialog):
 	#Windows: Modified solvers.COINMP_DLL() in dir pulp to run.
         self.problem.solve(solvers.COIN_CMD())
         return
+    
+class AboutDialog(QDialog):
+    def __init__(self, parent=None):
+        super(AboutDialog, self).__init__(parent)
+        self.create()
+        
+        title = QLabel()
+        title.setText('Pulppy Software\nLinear Programming Software')
+        title.setAlignment(Qt.AlignLeft)
+        title.setStyleSheet("font-weight: bold")
+        
+        icon = QLabel()
+        imagen = QPixmap(os.getcwd()+'/pulppy.ico')
+        icon.setPixmap(imagen)
+        
+        topLayout = QHBoxLayout()
+        topLayout.addWidget(icon)
+        topLayout.addWidget(title)
+        mainLayout = QVBoxLayout()
+        mainLayout.addLayout(topLayout)
+        mainLayout.addWidget(self.tabWidget)
+
+        self.setLayout(mainLayout)
+        self.setGeometry(500, 200, 350, 250)
+        self.setWindowTitle('About')
+        self.setWindowIcon(QIcon(os.getcwd()+'/pulppy.ico'))
+
+    def create(self):
+        self.tabWidget = QTabWidget()
+
+        tab1 = QWidget()
+        labelDescription = QLabel()
+        labelDescription.setText("Linear Programming Software for optimizing\n"
+                              "various practical problems of Operations Research.\n"
+                              "\n"
+                              "Repository:\n"
+                              "https://github.com/bruino/pulppy\n")
+        tab1hbox = QHBoxLayout()
+        tab1hbox.addWidget(labelDescription)
+        tab1.setLayout(tab1hbox)
+
+        tab2 = QWidget()        
+        labelAutors = QLabel()
+        labelAutors.setText("+ Danert, Maldonado Jessica\n"
+                              "+ Gutierrez, Mariano\n"
+                              "+ Moreno, Victor Ricardo\n"
+                              "+ Sarverry, Bruno Alejandro\n")
+        tab2hbox = QHBoxLayout()
+        tab2hbox.setContentsMargins(5, 5, 5, 5)
+        tab2hbox.addWidget(labelAutors)
+        tab2.setLayout(tab2hbox)
+
+        self.tabWidget.addTab(tab1, "&About")
+        self.tabWidget.addTab(tab2, "&Autors")
+
 
 if __name__ == '__main__':
     import sys
