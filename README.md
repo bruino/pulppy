@@ -8,6 +8,8 @@ The project has the following dependencies:
 1. [PuLP](https://github.com/coin-or/pulp) PuLP is an LP modeler written in python. 
 2. [PyQt5](https://riverbankcomputing.com/software/pyqt/intro) Qt is a cross-platform application development framework for desktop, embedded and mobile.
 3. [Clp](https://projects.coin-or.org/Clp) The Computational Infrastructure for Operations Research (COIN-OR**, or simply COIN)  project is an initiative to spur the development of open-source software for the operations research community. 
+4. [MatplotLib](https://github.com/matplotlib/matplotlib) Matplotlib is a Python 2D plotting library which produces publication-quality figures in a variety of hardcopy formats and interactive environments across platforms.
+5. [Numpy](https://github.com/numpy/numpy) NumPy is the fundamental package needed for scientific computing with Python.
 
 ## Origin
 This software was made to accomplish a university project for the "Operative Research" course of the [Universidad Tecnológica Nacional - Facultad Regional Tucumán](http://www.frt.utn.edu.ar/). For any questions or suggestions, reach me at: bruino.one[at]gmail.com
