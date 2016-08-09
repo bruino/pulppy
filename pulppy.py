@@ -447,8 +447,6 @@ class InputTableModel(QDialog):
         self.setLayout(mainLayout)
 
     def verify(self):
-        self.accept()
-
         #Matix Values
         matrix = []
         matrixGraph = []
@@ -468,63 +466,77 @@ class InputTableModel(QDialog):
             if f == 0:
                 row.pop(-1)
             matrix.append(row)
-
-        #Title and Criterion
-        if self.objCriterion:
-            self.problem = LpProblem(self.problemTitle, LpMaximize)
-        else:
-            self.problem = LpProblem(self.problemTitle, LpMinimize)
-
-        #Non Negative Continuous
-        if self.typeVariable == 1:
-            x = LpVariable.matrix("x", list(range(self.numVariables)), 0, None)
-            print "Non Negative Continuous"
-        #Non Negative Integer
-        elif self.typeVariable == 2:
-            x = LpVariable.matrix("x", list(range(self.numVariables)), 0, None
-                                    , LpInteger)
-            print "Non Negative Integer"
-        #Binary
-        elif self.typeVariable == 3:
-            x = LpVariable.matrix("x", list(range(self.numVariables)), 0, 1
-                                    , LpInteger)
-            print "Binary"
-        #Unrestricted
-        else:
-            x = LpVariable.matrix("x", list(range(self.numVariables)), None
-                                    , None)
-            print "Unrestricted"
-
-        for i in range(len(matrix)):
-            if i == 0:
-                #Function Objetive
-                weight = lpDot(matrix[i], x)
-                self.problem += weight
+        flag = False
+        for s in range(len(matrix[0])):
+            if matrix[0][s] == 0:
+                flag = True
+        
+        if flag == False:
+            #Title and Criterion
+            if self.objCriterion:
+                self.problem = LpProblem(self.problemTitle, LpMaximize)
             else:
-                b = matrix[i][-1]
-                sign = matrix[i][-2]
-                constraint = lpDot(matrix[i][:-2], x)
-                if sign == u'>':
-                    self.problem += constraint > b
-                elif sign == u'>=':
-                    self.problem += constraint >= b
-                elif sign == u'=':
-                    self.problem += constraint == b
-                elif sign == u'<=':
-                    self.problem += constraint <= b
+                self.problem = LpProblem(self.problemTitle, LpMinimize)
+    
+            #Non Negative Continuous
+            if self.typeVariable == 1:
+                x = LpVariable.matrix("x", list(range(self.numVariables)), 0, None)
+                print "Non Negative Continuous"
+            #Non Negative Integer
+            elif self.typeVariable == 2:
+                x = LpVariable.matrix("x", list(range(self.numVariables)), 0, None
+                                        , LpInteger)
+                print "Non Negative Integer"
+            #Binary
+            elif self.typeVariable == 3:
+                x = LpVariable.matrix("x", list(range(self.numVariables)), 0, 1
+                                        , LpInteger)
+                print "Binary"
+            #Unrestricted
+            else:
+                x = LpVariable.matrix("x", list(range(self.numVariables)), None
+                                        , None)
+                print "Unrestricted"
+    
+            for i in range(len(matrix)):
+                if i == 0:
+                    #Function Objetive
+                    weight = lpDot(matrix[i], x)
+                    self.problem += weight
                 else:
-                    self.problem += constraint < b
+                    b = matrix[i][-1]
+                    sign = matrix[i][-2]
+                    constraint = lpDot(matrix[i][:-2], x)
+                    if sign == u'>':
+                        self.problem += constraint > b
+                    elif sign == u'>=':
+                        self.problem += constraint >= b
+                    elif sign == u'=':
+                        self.problem += constraint == b
+                    elif sign == u'<=':
+                        self.problem += constraint <= b
+                    else:
+                        self.problem += constraint < b
+    
+            #Linux: solvers.COIN_CMD() with coin-cbc installed.
+            #Windows: Modified solvers.COINMP_DLL() in dir pulp to run.
+            self.problem.solve(solvers.COIN_CMD())
+            if self.numVariables == 2:
+                point = []
+                for r in self.problem.variables():
+                    if r.name != '__dummy':
+                        point.append(r.varValue)
+                self.canvas = mplc(self, width=5, height=8, dpi=100, matrixModel = matrix, title=self.problemTitle, point=point)
+            self.accept()
+            return
+        
+        answer = QMessageBox.warning(self, "Incomplete Input Problem",
+                "Dont contain all the necessary information.\n"
+                "Do you want to discard it?",
+                QMessageBox.Yes, QMessageBox.No)
 
-        #Linux: solvers.COIN_CMD() with coin-cbc installed.
-	#Windows: Modified solvers.COINMP_DLL() in dir pulp to run.
-        self.problem.solve(solvers.COIN_CMD())
-        if self.numVariables == 2:
-            point = []
-            for r in self.problem.variables():
-                if r.name != '__dummy':
-                    point.append(r.varValue)
-            self.canvas = mplc(self, width=5, height=8, dpi=100, matrixModel = matrix, title=self.problemTitle, point=point)
-        return
+        if answer == QMessageBox.Yes:
+            self.reject()
     
 class AboutDialog(QDialog):
     def __init__(self, parent=None):
