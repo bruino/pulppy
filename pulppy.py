@@ -44,11 +44,11 @@ class MainWindow(QMainWindow):
         fileMenu = QMenu("&File", self)
         newAction = fileMenu.addAction("&New...")
         newAction.setShortcut("Ctrl+N")
-        quitAction = fileMenu.addAction("&Exit")
-        quitAction.setShortcut("Ctrl+Q")
         self.printAction = fileMenu.addAction("&Print...", self.printFile)
         self.printAction.setShortcut("Ctrl+P")
         self.printAction.setEnabled(False)
+        quitAction = fileMenu.addAction("&Exit")
+        quitAction.setShortcut("Ctrl+Q")
 
         helpMenu = QMenu("&Help", self)
         aboutAction = helpMenu.addAction("&About")
@@ -568,7 +568,7 @@ class AboutDialog(QDialog):
         title.setStyleSheet("font-weight: bold")
         
         icon = QLabel()
-        imagen = QPixmap(os.getcwd()+'/pulppy.ico')
+        imagen = QPixmap('pulppy.ico')
         icon.setPixmap(imagen)
         
         topLayout = QHBoxLayout()
@@ -581,7 +581,7 @@ class AboutDialog(QDialog):
         self.setLayout(mainLayout)
         self.setGeometry(500, 200, 350, 250)
         self.setWindowTitle('About')
-        self.setWindowIcon(QIcon(os.getcwd()+'/pulppy.ico'))
+        self.setWindowIcon(QIcon('pulppy.ico'))
 
     def create(self):
         self.tabWidget = QTabWidget()
