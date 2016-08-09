@@ -33,6 +33,7 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QDialog, QDoubleSpinBox,
         QPushButton, QMessageBox, QMenu, QTableWidget, QTableWidgetItem,
         QTabWidget, QComboBox, QTextEdit, QItemDelegate, QHBoxLayout, QSpinBox
         , QRadioButton, QGroupBox, QVBoxLayout, QSizePolicy, QWidget)
+from PyQt5.QtPrintSupport import QAbstractPrintDialog, QPrintDialog, QPrinter
 
 #
 #Pulppy Software Main Windows
@@ -45,6 +46,9 @@ class MainWindow(QMainWindow):
         newAction.setShortcut("Ctrl+N")
         quitAction = fileMenu.addAction("&Exit")
         quitAction.setShortcut("Ctrl+Q")
+        self.printAction = fileMenu.addAction("&Print...", self.printFile)
+        self.printAction.setShortcut("Ctrl+P")
+        self.printAction.setEnabled(False)
 
         helpMenu = QMenu("&Help", self)
         aboutAction = helpMenu.addAction("&About")
@@ -62,10 +66,22 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.solvers)
         self.setWindowTitle("Pulppy Software")
-
-    def createSample(self):
-        self.createTabSolver()
-
+    
+    def printFile(self):
+        editor = self.solvers.currentWidget()
+        
+        if type(editor) == QTextEdit:
+            printer = QPrinter()
+            dialog = QPrintDialog(printer, self)
+            dialog.setWindowTitle("Print Document")
+            if dialog.exec_() != QDialog.Accepted:
+                return
+            editor.print_(printer)
+        else:
+            answer = QMessageBox.warning(self, "Not Print Image",
+                "Dont print graph.",
+                QMessageBox.Ok)
+        
     def closeTab (self, currentIndex):
         currentQWidget = self.solvers.widget(currentIndex)
         currentQWidget.deleteLater()
@@ -184,6 +200,8 @@ class MainWindow(QMainWindow):
         cursor.insertBlock()
         cursor.insertFrame(bodyFrameFormat)
 
+        cursor.insertBlock()
+
         orderTableFormat = QTextTableFormat()
         orderTableFormat.setAlignment(Qt.AlignHCenter)
         orderTable = cursor.insertTable(1, 3, orderTableFormat)
@@ -243,6 +261,7 @@ class MainWindow(QMainWindow):
             cursor = orderTable.cellAt(row, 2).firstCursorPosition()
             cursor.insertText(str(problem.constraints.get("_C"+str(m+1)).pi)
                                     , textFormat)
+            self.printAction.setEnabled(True)
 
     def openAbout(self):
         about = AboutDialog(self)
