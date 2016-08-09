@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# PuLP : Python LP Modeler
+
+# Pulppy Software - Linear Programming software for optimizing various practical problems of Operations Research.
 
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -21,6 +22,7 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import os
+from mplCanvas import MplCanvas as mplc
 from pulp import *
 from PyQt5.QtCore import QDate, Qt
 from PyQt5.QtGui import (QFont, QTextCharFormat, QTextCursor, QTextFrameFormat,
@@ -32,6 +34,9 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QDialog, QDoubleSpinBox,
         QTabWidget, QComboBox, QTextEdit, QItemDelegate, QHBoxLayout, QSpinBox
         , QRadioButton, QGroupBox, QVBoxLayout, QSizePolicy, QWidget)
 
+#
+#Pulppy Software Main Windows
+#
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -74,6 +79,17 @@ class MainWindow(QMainWindow):
             , inputProblemDialog.typeVar, inputProblemDialog.objCrit, self)
             if inputTable.exec_() == QDialog.Accepted:
                 self.createTabSolver(inputTable.problem)
+                if inputTable.numVariables == 2:
+                    self.createTabGraph(inputTable.canvas)
+                    
+    def createTabGraph(self, canvas):
+        self.main_widget = QWidget(self)
+        vbox = QVBoxLayout(self.main_widget)
+        vbox.addWidget(canvas.mpl_toolbar)
+        vbox.addWidget(canvas)
+        
+        tabIndex = self.solvers.addTab(self.main_widget, "Graph - "+canvas.title)
+        self.solvers.setCurrentIndex(tabIndex)
 
     def createTabSolver(self, problem):
         editor = QTextEdit()
@@ -435,6 +451,7 @@ class InputTableModel(QDialog):
 
         #Matix Values
         matrix = []
+        matrixGraph = []
         for f in range(self.tableModel.rowCount()):
             row = []
             for c in range(self.tableModel.columnCount()):
@@ -484,9 +501,9 @@ class InputTableModel(QDialog):
                 weight = lpDot(matrix[i], x)
                 self.problem += weight
             else:
-                b = matrix[i].pop(-1)
-                sign = matrix[i].pop(-1)
-                constraint = lpDot(matrix[i], x)
+                b = matrix[i][-1]
+                sign = matrix[i][-2]
+                constraint = lpDot(matrix[i][:-2], x)
                 if sign == u'>':
                     self.problem += constraint > b
                 elif sign == u'>=':
@@ -501,6 +518,12 @@ class InputTableModel(QDialog):
         #Linux: solvers.COIN_CMD() with coin-cbc installed.
 	#Windows: Modified solvers.COINMP_DLL() in dir pulp to run.
         self.problem.solve(solvers.COIN_CMD())
+        if self.numVariables == 2:
+            point = []
+            for r in self.problem.variables():
+                if r.name != '__dummy':
+                    point.append(r.varValue)
+            self.canvas = mplc(self, width=5, height=8, dpi=100, matrixModel = matrix, title=self.problemTitle, point=point)
         return
     
 class AboutDialog(QDialog):
